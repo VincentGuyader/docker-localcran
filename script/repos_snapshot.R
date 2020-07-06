@@ -8,8 +8,12 @@ if (tolower(Sys.getenv("FULL_SNAPSHOT")) %in% c("","false","f")){
   Sys.setenv("FULL_SNAPSHOT"= TRUE )
   }
 
-CRAN_mirror <- paste0('https://mran.microsoft.com/snapshot/',Sys.getenv("R_VERSION_DATE"))
-options(repos=CRAN_mirror)
+if (Sys.getenv("CRAN_mirror")==""){
+  Sys.setenv("CRAN_mirror"= paste0('https://mran.microsoft.com/snapshot/',Sys.getenv("R_VERSION_DATE")) )
+}
+
+
+options(repos=Sys.getenv("CRAN_mirror"))
 localCRAN <- file.path('/miniCRAN',Sys.getenv("R_VERSION"))
 dir.create(localCRAN ,showWarnings = FALSE,recursive = TRUE)
 
