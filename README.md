@@ -27,7 +27,7 @@ docker run -v local_path_to/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" -e
 docker run -v local_path_to/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" --env-file=packages.list minicran
 ```
 
-`packages.list` is a file containing the list of packages to download : 
+where `packages.list` is a file containing the list of packages to download : 
 
 ```
 PACKAGE_TO_DL=golem,rusk,tidyverse
