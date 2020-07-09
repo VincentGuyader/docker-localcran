@@ -9,8 +9,16 @@ the Container is "smart" and only needed pacakges and dependencies will be downl
 # Build the image 
 
 ```
-docker build -t minicran .
+docker build -t minicran -f Dockerfile_centos .
 ```
+
+OR
+
+
+```
+docker build -t minicran -f Dockerfile_ubuntu .
+```
+
 
 This docker containe use by default the MRAN as repos see : <https://mran.microsoft.com/timemachine>.
 Use `R_VERSION_DATE="2019-12-31"` to fix the snapshot date, you can also pass the full repos link with `CRAN_MIRROR=https://cran.rstudio.com/`

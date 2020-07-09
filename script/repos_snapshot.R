@@ -1,11 +1,21 @@
+# print(Sys.getenv("R_VERSION_DATE"))
+# print(Sys.getenv("FULL_SNAPSHOT"))
+# print(Sys.getenv("CRAN_mirror"))
+# print(Sys.getenv("R_VERSION"))
+
 if (Sys.getenv("R_VERSION_DATE")==""){
     Sys.setenv("R_VERSION_DATE"= as.character(Sys.Date()) )
 }
 
+
+if (Sys.getenv("R_VERSION")==""){
+    Sys.setenv("R_VERSION"= paste(R.Version()$major,R.Version()$minor,sep=".") )
+}
+
 if (tolower(Sys.getenv("FULL_SNAPSHOT")) %in% c("","false","f")){
-  Sys.setenv("FULL_SNAPSHOT"= FALSE )
+  Sys.setenv("FULL_SNAPSHOT" = FALSE )
 } else{
-  Sys.setenv("FULL_SNAPSHOT"= TRUE )
+  Sys.setenv("FULL_SNAPSHOT" = TRUE )
   }
 
 if (Sys.getenv("CRAN_mirror")==""){
@@ -19,7 +29,7 @@ dir.create(localCRAN ,showWarnings = FALSE,recursive = TRUE)
 
 message(paste("R version = ",Sys.getenv("R_VERSION") ))
 message(paste("Snapshot Date = ",Sys.getenv("R_VERSION_DATE") ))
-message(paste("CRAN repos = ",CRAN_mirror ))
+message(paste("CRAN repos = ",Sys.getenv("CRAN_mirror") ))
 message(paste("Internal folder local CRAN repos = ",localCRAN ))
 
 
@@ -39,8 +49,11 @@ if ( as.logical(Sys.getenv("FULL_SNAPSHOT")) ){
 }else{
   message("partial snapshot")  
   les_packages <- unique(unlist(strsplit(Sys.getenv("PACKAGE_TO_DL"),split = ",")))
+  if (length(les_packages)>0){
   les_packages_cible <- les_packages <- unique(miniCRAN::pkgDep(les_packages))
-  
+  }else{
+    les_packages_cible <- les_packages <- NULL
+  }
 }
 
 message(paste("Number of packages asked : ", length(les_packages_cible)))
