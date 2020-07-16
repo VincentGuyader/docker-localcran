@@ -83,7 +83,7 @@ message("DL done")
 # on update le depot (on ecrit le fichier PACKAGE)
 
 message("update PACKAGES, PACKAGES.gz and PACKAGES.rds")
-tools::write_PACKAGES(dir = localCRAN, type = "source")
+tools::write_PACKAGES(dir = file.path(localCRAN,"src/contrib"), type = "source",verbose=TRUE)
 message("done")
 
 
