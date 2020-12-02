@@ -8,8 +8,8 @@ if (Sys.getenv("R_VERSION_DATE")==""){
 }
 
 
-if (Sys.getenv("R_VERSION")==""){
-    Sys.setenv("R_VERSION"= paste(R.Version()$major,R.Version()$minor,sep=".") )
+if (Sys.getenv("OTHER_R_VERSION")==""){
+    Sys.setenv("OTHER_R_VERSION"= paste(R.Version()$major,R.Version()$minor,sep=".") )
 }
 
 if (tolower(Sys.getenv("FULL_SNAPSHOT")) %in% c("","false","f")){
@@ -24,10 +24,10 @@ if (Sys.getenv("CRAN_mirror")==""){
 
 
 options(repos=Sys.getenv("CRAN_mirror"))
-localCRAN <- file.path('/miniCRAN',Sys.getenv("R_VERSION"))
+localCRAN <- file.path('/miniCRAN',Sys.getenv("OTHER_R_VERSION"))
 dir.create(localCRAN ,showWarnings = FALSE,recursive = TRUE)
 
-message(paste("R version = ",Sys.getenv("R_VERSION") ))
+message(paste("R version = ",Sys.getenv("OTHER_R_VERSION") ))
 message(paste("Snapshot Date = ",Sys.getenv("R_VERSION_DATE") ))
 message(paste("CRAN repos = ",Sys.getenv("CRAN_mirror") ))
 message(paste("Internal folder local CRAN repos = ",localCRAN ))
