@@ -19,7 +19,7 @@ if (tolower(Sys.getenv("FULL_SNAPSHOT")) %in% c("","false","f")){
   }
 
 if (Sys.getenv("CRAN_mirror")==""){
-  Sys.setenv("CRAN_mirror"= paste0('https://mran.microsoft.com/snapshot/',Sys.getenv("R_VERSION_DATE")) )
+  Sys.setenv("CRAN_mirror"= paste0('https://packagemanager.posit.co/cran/',Sys.getenv("R_VERSION_DATE")) )
 }
 
 
@@ -42,12 +42,12 @@ available_packages <-  rownames(available.packages())
 message(paste("Number of available packages in repos : ", length(available_packages)))
 
 if ( as.logical(Sys.getenv("FULL_SNAPSHOT")) ){
-  
+
   message("Full Snapshot")
-  
+
   les_packages_cible <- les_packages <- available_packages
 }else{
-  message("partial snapshot")  
+  message("partial snapshot")
   les_packages <- unique(unlist(strsplit(Sys.getenv("PACKAGE_TO_DL"),split = ",")))
   if (length(les_packages)>0){
   les_packages_cible <- les_packages <- unique(miniCRAN::pkgDep(les_packages))
@@ -72,10 +72,10 @@ for ( i in seq_along(les_packages)){
   avancement <- paste(
     round((i-1+length(deja_dl_current))/length(les_packages_cible)
           ,digits = 2)*100," %")
-  
+
   message(paste(les_packages[i], " - ",avancement))
   makeRepo(les_packages[i], path = localCRAN, type = "source", writePACKAGES = FALSE, quiet = TRUE)
-  
+
 }
 
 message("DL done")
@@ -95,14 +95,14 @@ if ( length(missing_packages)> 0){
 message(paste("missing packages : "),paste(missing_packages,collapse=", "))
 } else {
   message("All pacakges downloaded")
-  
+
 }
 
 # on peut verifier que tout est ok en listant les packages disponibles dans le depot local.
 #available.packages(repos = paste0("file:///",localCRAN))
 
 # ceci doit retourner TRUE
-#print(nrow(available.packages(repos = paste0("file:///",localCRAN))) == nrow(available.packages(repos = paste0('https://mran.microsoft.com/snapshot/',Sys.getenv("R_VERSION_DATE")))))
+#print(nrow(available.packages(repos = paste0("file:///",localCRAN))) == nrow(available.packages(repos = paste0('https://packagemanager.posit.co/cran/',Sys.getenv("R_VERSION_DATE")))))
 
 
 

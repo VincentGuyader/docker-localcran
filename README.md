@@ -20,7 +20,7 @@ docker build -t minicran -f Dockerfile_ubuntu .
 ```
 
 
-This docker containe use by default the MRAN as repos see : <https://mran.microsoft.com/timemachine>.
+This docker containe use by default the Posit Public Package Manager as repos see : <https://packagemanager.posit.co/cran/>.
 Use `R_VERSION_DATE="2019-12-31"` to fix the snapshot date, you can also pass the full repos link with `CRAN_MIRROR=https://cran.rstudio.com/`
 
 # Full snapshot (Download all available R package in the repos )
