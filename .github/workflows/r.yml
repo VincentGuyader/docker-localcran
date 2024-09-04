@@ -21,4 +21,4 @@ jobs:
 
       - name: Run Docker container
         run: |
-          docker run -v C:/path/to/local/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" --env-file=packages.list minicran
+          docker run -v C:/path/to/local/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" --env-file=packages_mini.list minicran
