@@ -1,11 +1,24 @@
-FROM rocker/r-base:4.3.1
-RUN apt-get update && apt-get install -y \
-	libcurl4-gnutls-dev \
-	libssl-dev \
-	libxml2-dev
-RUN R -e "install.packages('miniCRAN',repos='http://cloud.r-project.org')"	
-#RUN install2.r miniCRAN
-RUN mkdir /miniCRAN
-COPY ./script /script
-CMD ["r", "/script/repos_snapshot.R"]
+# Use an appropriate R base image
+FROM rocker/r-ver:4.3.1
 
+# Install necessary system dependencies
+RUN apt-get update && apt-get install -y \
+    libcurl4-openssl-dev \
+    libxml2-dev \
+    libssl-dev \
+    libxslt-dev
+
+# Install the XML package first, since it's a dependency
+RUN R -e "install.packages('XML', repos='https://cran.r-project.org')"
+
+# Install miniCRAN package
+RUN R -e "install.packages('miniCRAN', repos='https://cran.r-project.org')"
+
+# Copy your R script to create the miniCRAN repository
+COPY create_miniCRAN.R /create_miniCRAN.R
+
+# Run the R script to set up miniCRAN
+RUN Rscript /create_miniCRAN.R
+
+# Define the command to run your container
+CMD ["Rscript", "/create_miniCRAN.R"]
