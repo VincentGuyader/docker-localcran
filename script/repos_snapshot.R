@@ -24,7 +24,7 @@ if (Sys.getenv("CRAN_mirror")==""){
 
 
 options(repos=Sys.getenv("CRAN_mirror"))
-localCRAN <- file.path('/DM_Cohort/miniCRAN',Sys.getenv("OTHER_R_VERSION"))
+localCRAN <- file.path('/miniCRAN',Sys.getenv("OTHER_R_VERSION"))
 dir.create(localCRAN ,showWarnings = FALSE,recursive = TRUE)
 
 message(paste("R version = ",Sys.getenv("OTHER_R_VERSION") ))
