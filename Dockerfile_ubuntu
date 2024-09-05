@@ -12,6 +12,6 @@ RUN R -e "install.packages('XML', repos='https://cran.r-project.org')"
 
 RUN mkdir /miniCRAN
 COPY ./script /script
-COPY .env /.env
+COPY .env .env
 CMD ["r", "/script/repos_snapshot.R"]
 
