@@ -12,17 +12,6 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v3
 
-      - name: Verify .env file exists
-        run: |
-          if [ ! -f .env ]; then echo ".env file not found"; exit 1; fi
-        shell: bash
-
-      - name: Load .env file
-        run: |
-          set -o allexport
-          source .env
-          set +o allexport
-        shell: bash
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
@@ -30,6 +19,18 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t minicran -f Dockerfile_ubuntu .
+
+          - name: Verify .env file exists
+          run: |
+            if [ ! -f .env ]; then echo ".env file not found"; exit 1; fi
+          shell: bash
+  
+      - name: Load .env file
+        run: |
+            set -o allexport
+            source .env
+            set +o allexport
+        shell: bash
 
       - name: Run Docker container
         run: |
