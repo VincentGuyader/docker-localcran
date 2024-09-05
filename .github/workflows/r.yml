@@ -12,11 +12,9 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v3
 
-      - name: Load .env file
+      - name: Load and export variables from .env file
         run: |
-          set -o allexport
-          source .env
-          set +o allexport
+          export $(grep -v '^#' .env | xargs)
         shell: bash
 
       - name: Set up Docker
