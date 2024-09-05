@@ -10,7 +10,7 @@ RUN R -e "install.packages('miniCRAN',repos='http://cloud.r-project.org')"
 # Install the XML package first, since it's a dependency
 RUN R -e "install.packages('XML', repos='https://cran.r-project.org')"
 
-RUN mkdir /miniCRAN
+RUN mkdir DM_cohort/miniCRAN
 COPY ./script /script
 CMD ["r", "/script/repos_snapshot.R"]
 
