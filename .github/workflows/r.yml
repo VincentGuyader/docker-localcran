@@ -19,6 +19,7 @@ jobs:
         run: |
           docker build -t minicran -f Dockerfile_ubuntu .
 
-      - name: Run Docker container
+      - name: Run Docker container via bash script
         run: |
-          docker run -v C:/chinapat.onp/source/R_research_package/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" --env-file=packages_mini.list minicran
+            chmod +x run_docker.sh
+            ./run_docker.sh
