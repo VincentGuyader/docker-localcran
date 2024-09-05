@@ -12,6 +12,13 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v3
 
+      - name: Load .env file
+        run: |
+          set -o allexport
+          source .env
+          set +o allexport
+        shell: bash
+
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
@@ -19,7 +26,10 @@ jobs:
         run: |
           docker build -t minicran -f Dockerfile_ubuntu .
 
-      - name: Run Docker container via bash script
+      - name: Run Docker container
         run: |
-            
-            ./run_docker.sh
+          docker run -v C:/chinapat.onp/source/R_research_package/miniCRAN:/miniCRAN \
+          -e R_VERSION_DATE="$R_VERSION_DATE" \
+          --env-file=$ENV_FILE \
+          minicran
+        shell: bash
