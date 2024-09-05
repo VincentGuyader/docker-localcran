@@ -15,10 +15,16 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
+      - name: Extract file list base name
+        id: extract_name
+        run: echo "::set-output name=base_name::$(basename -s .list {{name file list }}.list)"
+
+      - name: Create directory for miniCRAN
+        run: mkdir -p C:/chinapat.onp/source/R_research_package/${{ steps.extract_name.outputs.base_name }}/miniCRAN
+
       - name: Build Docker image
-        run: |
-          docker build -t minicran -f Dockerfile_ubuntu .
+        run: docker build -t minicran -f Dockerfile_ubuntu .
 
       - name: Run Docker container
         run: |
-          docker run -v C:/path/to/local/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" --env-file=packages_mini.list minicran
+          docker run -v C:/chinapat.onp/source/R_research_package/${{ steps.extract_name.outputs.base_name }}/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" --env-file={{name file list }}.list minicran
