@@ -4,8 +4,16 @@ RUN apt-get update && apt-get install -y \
 	libssl-dev \
 	libxml2-dev
 RUN R -e "install.packages('miniCRAN',repos='http://cloud.r-project.org')"	
+
 #RUN install2.r miniCRAN
+
+# Install the XML package first, since it's a dependency
+RUN R -e "install.packages('XML', repos='https://cran.r-project.org')"
+
 RUN mkdir /miniCRAN
 COPY ./script /script
 CMD ["r", "/script/repos_snapshot.R"]
+
+
+
 
