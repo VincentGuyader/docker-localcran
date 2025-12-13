@@ -173,4 +173,7 @@ After execution, your `miniCRAN` directory will contain:
     - `R-{major.minor}/` (R version)
       - `src/contrib/` (Linux: binary packages as .tar.gz)
       - `bin/windows/contrib/{major.minor}/` (Windows: .zip binaries)
+      - `src/contrib/` (Windows: PACKAGES files for auto-detection)
       - `PACKAGES`, `PACKAGES.gz`, `PACKAGES.rds` (repository metadata)
+
+**Windows repositories** are created as "dual" repositories with PACKAGES files in both `bin/windows/contrib/` and `src/contrib/` locations. This allows R to automatically detect Windows binaries without requiring `type="win.binary"` in `available.packages()` calls.
