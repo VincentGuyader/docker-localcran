@@ -1,42 +1,176 @@
 # docker-localcran
-use miniCRAN to localy create a CRAN repo snapshot using Docker
 
-Using this Docker container you will be able to create a local CRAN snapshot
+Use {miniCRAN} to locally create a CRAN repository snapshot using Docker.
 
-the Container is "smart" and only needed pacakges and dependencies will be downloaded ( ie : you can stop and rerun the process without loosing time)
+This Docker container allows you to create a local CRAN snapshot using miniCRAN.
+The container is smart: it only downloads the necessary packages and their dependencies.
+You can interrupt and resume the process without losing time.
 
+## Prerequisites
 
-# Build the image 
+- Docker installed on your system (only needed to create the repos)
+- A local directory to store the snapshot (e.g., `./miniCRAN`)
 
+## Programmatic Usage
+
+In addition to Docker usage with environment variables, you can use the R functions directly:
+
+```r
+# Load the script
+source("script/repos_snapshot.R")
+
+# Simple programmatic usage
+result <- CRANDORE_sync2(packages = "tidyverse", cleanup = TRUE)
+
+# Full configuration
+result <- CRANDORE_sync2(
+  os = "linux",
+  distro = "noble",
+  packages = "dplyr,ggplot2",
+  cleanup = TRUE,
+  update_index = "force",
+  verbose = TRUE
+)
+
+# Uses current environment variables as defaults
+result <- CRANDORE_sync2()
 ```
-docker build -t minicran -f Dockerfile_centos .
+
+## Building the Image
+
+Build the Docker image using one of the available Dockerfiles:
+
+```bash
+docker build -t crandore .
 ```
 
-OR
+## Usage
 
+The container uses the Posit Public Package Manager as the default repository.See: <https://packagemanager.posit.co/cran/>.
 
+### Environment Variables
+
+All variables are optional and have sensible defaults:
+
+| Variable | Description | Default Value |
+|----------|-------------|---------------|
+| `CRANDORE_OS` | Target OS ("linux" or "windows") | Current OS |
+| `CRANDORE_DISTRO` | Linux distribution (e.g., "jammy", "noble") | Auto-detected from container |
+| `CRANDORE_ARCH` | Architecture ("x86_64" or "aarch64") | Current arch |
+| `CRANDORE_SNAPSHOT_DATE` | CRAN snapshot date (YYYY-MM-DD or "latest") | Current date |
+| `CRANDORE_R_VERSION` | Target R version (e.g., "4.5.0") | Current R version |
+| `CRANDORE_FULL_SNAPSHOT` | Download all available packages | `false` |
+| `CRANDORE_PACKAGES` | List of packages to download (comma-separated) | Empty |
+| `CRANDORE_PACKAGES_FILE` | Path to packages list file (one per line, takes priority over CRANDORE_PACKAGES) | Empty |
+| `CRANDORE_CLEANUP` | Remove obsolete packages in partial mode | `false` |
+| `CRANDORE_UPDATE_INDEX` | Generate PACKAGES, PACKAGES.gz and PACKAGES.rds files (true=smart, false=skip, force=always) | `true` |
+| `CRANDORE_VERBOSE` | Enable verbose output | `true` |
+| `CRANDORE_RESUME` | Resume interrupted downloads | `true` |
+
+### Basic Usage
+
+By default, the script detects your current OS/architecture and downloads packages accordingly:
+
+```bash
+# Download specific packages for current platform
+docker run -v ./miniCRAN:/miniCRAN -e CRANDORE_PACKAGES="tidyverse" crandore
+
+# Full snapshot for current platform
+docker run -v ./miniCRAN:/miniCRAN -e CRANDORE_FULL_SNAPSHOT=true crandore
 ```
-docker build -t minicran -f Dockerfile_ubuntu .
+
+### Cross-Platform Builds
+
+To build repositories for different platforms:
+
+```bash
+# Linux binaries for Ubuntu Jammy
+docker run -v ./miniCRAN:/miniCRAN \
+  -e CRANDORE_OS=linux \
+  -e CRANDORE_DISTRO=jammy \
+  -e CRANDORE_PACKAGES="tidyverse" \
+  crandore
+
+# Windows binaries
+docker run -v /c/wootwoot:/miniCRAN   -e CRANDORE_OS=windows   -e CRANDORE_PACKAGES="tidyverse" crandore
 ```
 
+### Using a Packages File
 
-This docker containe use by default the Posit Public Package Manager as repos see : <https://packagemanager.posit.co/cran/>.
-Use `R_VERSION_DATE="2019-12-31"` to fix the snapshot date, you can also pass the full repos link with `CRAN_MIRROR=https://cran.rstudio.com/`
+For long lists of packages, use a file (one package per line):
 
-# Full snapshot (Download all available R package in the repos )
-
+Create a `packages.txt` file:
 ```
-docker run -v local_path_to/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" -e FULL_SNAPSHOT=true minicran
+dplyr
+data.table
+ggplot2
+tidyr
+readr
+purrr
+stringr
+forcats
+# This is a comment
+lubridate
 ```
 
-# Partial snapshot
+Then run:
+```bash
+docker run -v ./miniCRAN:/miniCRAN \
+  -v ./packages.txt:/packages.txt \
+  -e CRANDORE_PACKAGES_FILE=/packages.txt \
+  crandore
+```
 
-```
-docker run -v local_path_to/miniCRAN:/miniCRAN -e R_VERSION_DATE="2020-07-05" --env-file=packages.list minicran
-```
+### Advanced Examples
 
-where `packages.list` is a file containing the list of packages to download : 
+- Custom snapshot date and R version:
+  ```bash
+  docker run -v ./miniCRAN:/miniCRAN \
+    -e CRANDORE_SNAPSHOT_DATE="2024-01-01" \
+    -e CRANDORE_R_VERSION="4.3.0" \
+    -e CRANDORE_PACKAGES="tidyverse" \
+    crandore
+  ```
 
-```
-PACKAGE_TO_DL=golem,rusk,tidyverse
-```
+- Full Linux binary repository for multiple distributions:
+  ```bash
+  docker run -v ./miniCRAN:/miniCRAN \
+    -e CRANDORE_OS=linux \
+    -e CRANDORE_DISTRO=noble \
+    -e CRANDORE_FULL_SNAPSHOT=true \
+    crandore
+  ```
+
+- Clean up obsolete packages after updating package list:
+  ```bash
+  docker run -v ./miniCRAN:/miniCRAN \
+    -e CRANDORE_PACKAGES="tidyverse" \
+    -e CRANDORE_CLEANUP=true \
+    crandore
+  ```
+
+- Download packages only (skip PACKAGES index generation):
+  ```bash
+  docker run -v ./miniCRAN:/miniCRAN \
+    -e CRANDORE_PACKAGES="tidyverse" \
+    -e CRANDORE_UPDATE_INDEX=false \
+    crandore
+  ```
+
+- Force PACKAGES index regeneration (even if up to date):
+  ```bash
+  docker run -v ./miniCRAN:/miniCRAN \
+    -e CRANDORE_PACKAGES="tidyverse" \
+    -e CRANDORE_UPDATE_INDEX=force \
+    crandore
+  ```
+
+## Local Repository Structure
+
+After execution, your `miniCRAN` directory will contain:
+- `linux/` or `windows/` (based on target OS)
+  - `{distro}-{arch}/` or `windows-x86_64/` (target platform)
+    - `R-{major.minor}/` (R version)
+      - `src/contrib/` (Linux: binary packages as .tar.gz)
+      - `bin/windows/contrib/{major.minor}/` (Windows: .zip binaries)
+      - `PACKAGES`, `PACKAGES.gz`, `PACKAGES.rds` (repository metadata)
