@@ -20,7 +20,7 @@
 # - CRANDORE_CLEANUP       : TRUE/FALSE (default FALSE) removes obsolete packages in partial mode
 # - CRANDORE_UPDATE_INDEX  : TRUE/FALSE/"force" (default TRUE) generates PACKAGES, PACKAGES.gz, PACKAGES.rds files ("force" bypasses smart detection)
 # - CRANDORE_BASE_URL      : default "https://packagemanager.posit.co/cran"
-# - CRANDORE_LOCAL_ROOT    : default "/miniCRAN" (or "miniCRAN" if Windows)
+# - CRANDORE_LOCAL_ROOT    : default "./minicran"
 # - CRANDORE_VERBOSE       : TRUE/FALSE (default TRUE)
 # - CRANDORE_RESUME        : TRUE/FALSE (default TRUE) skips already present packages
 #
