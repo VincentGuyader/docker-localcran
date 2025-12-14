@@ -46,7 +46,7 @@ docker build -t crandore .
 
 ## Usage
 
-The container uses the Posit Public Package Manager as the default repository.See: <https://packagemanager.posit.co/cran/>.
+The container uses the Posit Public Package Manager as the default repository. See: <https://packagemanager.posit.co/cran/>.
 
 ### Environment Variables
 
