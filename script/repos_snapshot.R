@@ -495,21 +495,33 @@ crandore_ <- function() {
   # 8) Download with progress
   total_target <- max(1L, length(pkgs_target))
   done_already <- length(deja_dl_current)
+  failed_downloads <- character()
 
   for (i in seq_along(pkgs_todo)) {
     pct <- round((done_already + i - 1) / total_target * 100, 2)
     display_info(paste0(pkgs_todo[i], " - ", pct, " %"), verbose = verbose)
-    download_one(
-      pkg = pkgs_todo[i],
-      os = os,
-      repos = repos,
-      local_repo = local_repo,
-      r_version_target = r_version_target,
-      verbose = verbose
+    tryCatch(
+      {
+        download_one(
+          pkg = pkgs_todo[i],
+          os = os,
+          repos = repos,
+          local_repo = local_repo,
+          r_version_target = r_version_target,
+          verbose = verbose
+        )
+      },
+      error = function(e) {
+        display_info(paste0("ERROR downloading ", pkgs_todo[i], ": ", conditionMessage(e)), verbose = verbose)
+        failed_downloads <<- c(failed_downloads, pkgs_todo[i])
+      }
     )
   }
 
   display_info("DL done", verbose = verbose)
+  if (length(failed_downloads) > 0) {
+    display_info(paste0("WARNING: ", length(failed_downloads), " package(s) failed to download: ", paste(failed_downloads, collapse = ", ")), verbose = verbose)
+  }
 
   # 9) Cleanup (only in partial mode) - BEFORE PACKAGES update
   if (isTRUE(cleanup) && !isTRUE(full_snapshot)) {
