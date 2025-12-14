@@ -51,8 +51,16 @@ as_logical <- function(x, default = FALSE) {
 
 validate_snapshot_date <- function(d) {
   if (identical(d, "")) d <- as.character(Sys.Date())
-  if (!(identical(d, "latest") || grepl("^\\d{4}-\\d{2}-\\d{2}$", d))) {
+  if (identical(d, "latest")) return(d)
+  if (!grepl("^\\d{4}-\\d{2}-\\d{2}$", d)) {
     stop("CRANDORE_SNAPSHOT_DATE must be 'latest' or in YYYY-MM-DD format")
+  }
+  date_val <- as.Date(d, format = "%Y-%m-%d")
+  if (is.na(date_val)) {
+    stop("CRANDORE_SNAPSHOT_DATE is not a valid date")
+  }
+  if (date_val > Sys.Date()) {
+    stop("CRANDORE_SNAPSHOT_DATE cannot be in the future")
   }
   d
 }
