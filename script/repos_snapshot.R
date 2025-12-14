@@ -394,13 +394,16 @@ crandore_ <- function() {
   if (!arch %in% c("x86_64","aarch64")) {
     stop("CRANDORE_ARCH must be 'x86_64' (windows or linux) or 'aarch64' (linux only)")
   }
-  if (os == "windows" && arch != "x86_64") {
-    stop("CRANDORE_ARCH must be 'x86_64' for Windows")
+  if (os == "linux") {
+    distro <- tolower(getenv("CRANDORE_DISTRO", detect_container_distro()))
+    if (!distro %in% linux_distros) {
+      stop(sprintf("CRANDORE_DISTRO unknown: '%s'. Values: %s", distro, paste(linux_distros, collapse = ", ")))
+    }
+  } else {
+    distro <- NULL
   }
-  if (os == "linux" && !distro %in% linux_distros) {
-    stop(sprintf("CRANDORE_DISTRO unknown: '%s'. Values: %s", distro, paste(linux_distros, collapse = ", ")))
-  }
-
+  arch <- tolower(getenv("CRANDORE_ARCH", current_arch))
+  if (!arch %in% c("x86_64","aarch64")) stop("CRANDORE_ARCH must be 'x86_64' or 'aarch64' (linux only)")
   snapshot_date <- validate_snapshot_date(getenv("CRANDORE_SNAPSHOT_DATE", ""))
   base_url <- getenv("CRANDORE_BASE_URL", "https://packagemanager.posit.co/cran")
 
