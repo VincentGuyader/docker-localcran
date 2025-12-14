@@ -442,7 +442,7 @@ crandore_ <- function() {
 
   # 3) Local path distinct per OS/target/Rmajor.minor
   r_mm <- r_major_minor(r_version_target)
-  target_id <- if (os == "linux") paste0(distro, "-", arch) else "windows-x86_64"
+  target_id <- if (os == "linux") paste0(distro, "-", arch) else paste0("windows-", arch)
   local_repo <- file.path(local_root, os, target_id, paste0("R-", r_mm))
   dir.create(local_repo, recursive = TRUE, showWarnings = FALSE)
 
