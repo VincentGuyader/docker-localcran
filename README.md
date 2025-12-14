@@ -20,10 +20,10 @@ In addition to Docker usage with environment variables, you can use the R functi
 source("script/repos_snapshot.R")
 
 # Simple programmatic usage
-result <- CRANDORE_sync2(packages = "tidyverse", cleanup = TRUE)
+result <- crandore(packages = "tidyverse", cleanup = TRUE)
 
 # Full configuration
-result <- CRANDORE_sync2(
+result <- crandore(
   os = "linux",
   distro = "noble",
   packages = "dplyr,ggplot2",
@@ -33,7 +33,7 @@ result <- CRANDORE_sync2(
 )
 
 # Uses current environment variables as defaults
-result <- CRANDORE_sync2()
+result <- crandore()
 ```
 
 ## Building the Image
@@ -109,6 +109,8 @@ The smart detection checks:
 
 ### Basic Usage
 
+**Note for Windows PowerShell users:** If using absolute paths in volume mounts, use `${PWD}` to refer to the current working directory instead of `./` (e.g., `${PWD}/miniCRAN:/miniCRAN`).
+
 By default, the script detects your current OS/architecture and downloads packages accordingly:
 
 ```bash
@@ -126,8 +128,8 @@ To build repositories for different platforms:
 ```bash
 # Linux binaries for Ubuntu Jammy
 docker run -v ./miniCRAN:/miniCRAN \
-  -e CRANDORE_OS=linux \
-  -e CRANDORE_DISTRO=jammy \
+  -e CRANDORE_OS="linux" \
+  -e CRANDORE_DISTRO="jammy" \
   -e CRANDORE_PACKAGES="tidyverse" \
   crandore
 
@@ -139,7 +141,7 @@ docker run -v /c/wootwoot:/miniCRAN   -e CRANDORE_OS=windows   -e CRANDORE_PACKA
 
 For long lists of packages, use a file (one package per line):
 
-Create a `packages.txt` file:
+Create a `packages.list` file:
 ```
 dplyr
 data.table
@@ -156,8 +158,8 @@ lubridate
 Then run:
 ```bash
 docker run -v ./miniCRAN:/miniCRAN \
-  -v ./packages.txt:/packages.txt \
-  -e CRANDORE_PACKAGES_FILE=/packages.txt \
+  -v ./packages.list:/tmp/packages.list \
+  -e CRANDORE_PACKAGES_FILE=/tmp/packages.list \
   crandore
 ```
 
@@ -175,8 +177,8 @@ docker run -v ./miniCRAN:/miniCRAN \
 - Full Linux binary repository for multiple distributions:
   ```bash
   docker run -v ./miniCRAN:/miniCRAN \
-    -e CRANDORE_OS=linux \
-    -e CRANDORE_DISTRO=noble \
+    -e CRANDORE_OS="linux" \
+    -e CRANDORE_DISTRO="noble" \
     -e CRANDORE_FULL_SNAPSHOT=true \
     crandore
   ```
