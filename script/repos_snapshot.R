@@ -123,7 +123,7 @@ local_root_default <- function() {
   file.path(".","minicran")
 }
 
-display_info<- function(..., verbose = TRUE) {
+display_info <- function(..., verbose = TRUE) {
   if (isTRUE(verbose)) message(...)
 }
 
