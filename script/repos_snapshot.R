@@ -520,7 +520,13 @@ crandore_ <- function() {
 
   display_info("DL done", verbose = verbose)
   if (length(failed_downloads) > 0) {
-    display_info(paste0("WARNING: ", length(failed_downloads), " package(s) failed to download: ", paste(failed_downloads, collapse = ", ")), verbose = verbose)
+    max_display <- 10
+    failed_list <- if (length(failed_downloads) > max_display) {
+      paste0(paste(head(failed_downloads, max_display), collapse = ", "), ", ... (", length(failed_downloads) - max_display, " more)")
+    } else {
+      paste(failed_downloads, collapse = ", ")
+    }
+    display_info(paste0("WARNING: ", length(failed_downloads), " package(s) failed to download: ", failed_list), verbose = verbose)
   }
 
   # 9) Cleanup (only in partial mode) - BEFORE PACKAGES update
