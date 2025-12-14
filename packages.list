@@ -1,1 +1,10 @@
-PACKAGE_TO_DL=data.table
+dplyr
+data.table
+ggplot2
+tidyr
+readr
+purrr
+stringr
+forcats
+# This is a comment
+lubridate

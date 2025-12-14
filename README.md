@@ -1,8 +1,8 @@
-# docker-localcran
+# Crandore
 
-Use {miniCRAN} to locally create a CRAN repository snapshot using Docker.
+Create local CRAN repository snapshots with Docker and miniCRAN.
 
-This Docker container allows you to create a local CRAN snapshot using miniCRAN.
+Crandore allows you to create local CRAN repository snapshots using Docker and miniCRAN.
 The container is smart: it only downloads the necessary packages and their dependencies.
 You can interrupt and resume the process without losing time.
 
@@ -66,6 +66,46 @@ All variables are optional and have sensible defaults:
 | `CRANDORE_UPDATE_INDEX` | Generate PACKAGES, PACKAGES.gz and PACKAGES.rds files (true=smart, false=skip, force=always) | `true` |
 | `CRANDORE_VERBOSE` | Enable verbose output | `true` |
 | `CRANDORE_RESUME` | Resume interrupted downloads | `true` |
+
+### Operating Modes
+
+The project offers two main operating modes:
+
+**Full Snapshot Mode** (`CRANDORE_FULL_SNAPSHOT=true`):
+- Downloads all available packages from the CRAN repository
+- Creates a complete mirror of the repository for the target platform
+- Useful for creating comprehensive local repositories
+
+**Partial Snapshot Mode** (default mode):
+- Downloads only the specified packages and their dependencies
+- Uses `miniCRAN::pkgDep()` to resolve dependencies
+- More efficient for specific needs
+
+### Resume Behavior
+
+The resume functionality (`CRANDORE_RESUME=true`) allows:
+- Skipping already downloaded packages
+- Interrupting and resuming the process without time loss
+- Checking existing files before downloading
+
+### Obsolete Package Cleanup
+
+With `CRANDORE_CLEANUP=true` (partial mode only):
+- Removes packages that are no longer in the target list
+- Cleans up obsolete files before index update
+- Maintains a clean and up-to-date repository
+
+### PACKAGES Index Generation
+
+The `CRANDORE_UPDATE_INDEX` variable controls index file generation:
+- `true` (default): smart update only when necessary
+- `false`: skip index generation
+- `force`: force index regeneration even if up to date
+
+The smart detection checks:
+- Number of packages in index vs downloaded files
+- File timestamps to detect changes
+- Consistency between different index files
 
 ### Basic Usage
 
