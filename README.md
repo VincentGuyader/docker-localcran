@@ -1,15 +1,13 @@
 # Crandore
 
-Create local CRAN repository snapshots with Docker and miniCRAN.
-
-Crandore allows you to create local CRAN repository snapshots using Docker and miniCRAN.
+Crandore allows you to create local CRAN repository snapshots using Docker and {miniCRAN}.
 The container is smart: it only downloads the necessary packages and their dependencies.
 You can interrupt and resume the process without losing time.
 
 ## Prerequisites
 
 - Docker installed on your system (only needed to create the repos)
-- A local directory to store the snapshot (e.g., `./miniCRAN`)
+- A local directory to store the snapshot (e.g., `./minicran`)
 
 ## Programmatic Usage
 
@@ -109,16 +107,16 @@ The smart detection checks:
 
 ### Basic Usage
 
-**Note for Windows PowerShell users:** If using absolute paths in volume mounts, use `${PWD}` to refer to the current working directory instead of `./` (e.g., `${PWD}/miniCRAN:/miniCRAN`).
+**Note for Windows PowerShell users:** If using absolute paths in volume mounts, use `${PWD}` to refer to the current working directory instead of `./` (e.g., `${PWD}/minicran:/minicran`).
 
 By default, the script detects your current OS/architecture and downloads packages accordingly:
 
 ```bash
 # Download specific packages for current platform
-docker run -v ./miniCRAN:/miniCRAN -e CRANDORE_PACKAGES="tidyverse" crandore
+docker run -v ./minicran:/minicran -e CRANDORE_PACKAGES="tidyverse" crandore
 
 # Full snapshot for current platform
-docker run -v ./miniCRAN:/miniCRAN -e CRANDORE_FULL_SNAPSHOT=true crandore
+docker run -v ./minicran:/minicran -e CRANDORE_FULL_SNAPSHOT=true crandore
 ```
 
 ### Cross-Platform Builds
@@ -127,14 +125,14 @@ To build repositories for different platforms:
 
 ```bash
 # Linux binaries for Ubuntu Jammy
-docker run -v ./miniCRAN:/miniCRAN \
+docker run -v ./minicran:/minicran \
   -e CRANDORE_OS="linux" \
   -e CRANDORE_DISTRO="jammy" \
   -e CRANDORE_PACKAGES="tidyverse" \
   crandore
 
 # Windows binaries
-docker run -v /c/wootwoot:/miniCRAN   -e CRANDORE_OS=windows   -e CRANDORE_PACKAGES="tidyverse" crandore
+docker run -v /c/wootwoot:/minicran   -e CRANDORE_OS=windows   -e CRANDORE_PACKAGES="tidyverse" crandore
 ```
 
 ### Using a Packages File
@@ -157,7 +155,7 @@ lubridate
 
 Then run:
 ```bash
-docker run -v ./miniCRAN:/miniCRAN \
+docker run -v ./minicran:/minicran \
   -v ./packages.list:/tmp/packages.list \
   -e CRANDORE_PACKAGES_FILE=/tmp/packages.list \
   crandore
@@ -167,7 +165,7 @@ docker run -v ./miniCRAN:/miniCRAN \
 
 - Custom snapshot date and R version:
   ```bash
-  docker run -v ./miniCRAN:/miniCRAN \
+  docker run -v ./minicran:/minicran \
     -e CRANDORE_SNAPSHOT_DATE="2024-01-01" \
     -e CRANDORE_R_VERSION="4.3.0" \
     -e CRANDORE_PACKAGES="tidyverse" \
@@ -176,7 +174,7 @@ docker run -v ./miniCRAN:/miniCRAN \
 
 - Full Linux binary repository for multiple distributions:
   ```bash
-  docker run -v ./miniCRAN:/miniCRAN \
+  docker run -v ./minicran:/minicran \
     -e CRANDORE_OS="linux" \
     -e CRANDORE_DISTRO="noble" \
     -e CRANDORE_FULL_SNAPSHOT=true \
@@ -185,7 +183,7 @@ docker run -v ./miniCRAN:/miniCRAN \
 
 - Clean up obsolete packages after updating package list:
   ```bash
-  docker run -v ./miniCRAN:/miniCRAN \
+  docker run -v ./minicran:/minicran \
     -e CRANDORE_PACKAGES="tidyverse" \
     -e CRANDORE_CLEANUP=true \
     crandore
@@ -193,7 +191,7 @@ docker run -v ./miniCRAN:/miniCRAN \
 
 - Download packages only (skip PACKAGES index generation):
   ```bash
-  docker run -v ./miniCRAN:/miniCRAN \
+  docker run -v ./minicran:/minicran \
     -e CRANDORE_PACKAGES="tidyverse" \
     -e CRANDORE_UPDATE_INDEX=false \
     crandore
@@ -201,7 +199,7 @@ docker run -v ./miniCRAN:/miniCRAN \
 
 - Force PACKAGES index regeneration (even if up to date):
   ```bash
-  docker run -v ./miniCRAN:/miniCRAN \
+  docker run -v ./minicran:/minicran \
     -e CRANDORE_PACKAGES="tidyverse" \
     -e CRANDORE_UPDATE_INDEX=force \
     crandore
@@ -209,7 +207,7 @@ docker run -v ./miniCRAN:/miniCRAN \
 
 ## Local Repository Structure
 
-After execution, your `miniCRAN` directory will contain:
+After execution, your `minicran` directory will contain:
 - `linux/` or `windows/` (based on target OS)
   - `{distro}-{arch}/` or `windows-x86_64/` (target platform)
     - `R-{major.minor}/` (R version)
