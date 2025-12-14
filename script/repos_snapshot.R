@@ -391,7 +391,12 @@ crandore_ <- function() {
 
   distro <- tolower(getenv("CRANDORE_DISTRO", detect_container_distro()))
   arch <- tolower(getenv("CRANDORE_ARCH", current_arch))
-  if (!arch %in% c("x86_64","aarch64")) stop("CRANDORE_ARCH must be 'x86_64' or 'aarch64' (linux only)")
+  if (!arch %in% c("x86_64","aarch64")) {
+    stop("CRANDORE_ARCH must be 'x86_64' (windows or linux) or 'aarch64' (linux only)")
+  }
+  if (os == "windows" && arch != "x86_64") {
+    stop("CRANDORE_ARCH must be 'x86_64' for Windows")
+  }
   if (os == "linux" && !distro %in% linux_distros) {
     stop(sprintf("CRANDORE_DISTRO unknown: '%s'. Values: %s", distro, paste(linux_distros, collapse = ", ")))
   }
