@@ -1,27 +1,36 @@
+# Crandore — Docker Compose
+#
+# Toutes les valeurs locales (chemins, domaine, ports) sont dans .env.
+# Copiez .env.example en .env et adaptez avant de lancer les services.
+#
+#   cp .env.example .env
+#
+# Services disponibles :
+#   crandore-init   Génère un stack.yml de départ
+#   crandore-stack  Construit les dépôts définis dans stack.yml
+#   crandore-serve  Sert les dépôts via HTTP ou HTTPS (Caddy)
+#   crandore-test   Lance la suite de tests unitaires
+#   crandore        Build manuel (un seul dépôt, via env vars)
+
 services:
 
-  # Mode init : génère un stack.yml de départ
+  # ── Init ────────────────────────────────────────────────────────────────────
+  # Génère un stack.yml dans le répertoire courant.
   #
-  # Usage (génère stack.yml dans le répertoire courant) :
+  # Usage :
   #   docker compose run --rm crandore-init
   #
-  # Paramètres optionnels :
-  #   CRANDORE_PACKAGES=tidyverse,shiny
-  #   CRANDORE_INIT_DATES=2026-03-08,2025-09-08
-  #   CRANDORE_INIT_DISTROS=jammy,noble
-  #   CRANDORE_INIT_R_VERSIONS=4.4,4.5
-  #   CRANDORE_INIT_WINDOWS=true
-  #   CRANDORE_INIT_WINDOWS_R_VERSIONS=4.4,4.5
-  #   CRANDORE_INIT_ARM=false
-  #   CRANDORE_FULL_SNAPSHOT=false
+  # Surcharges en ligne de commande (priorité sur .env) :
+  #   CRANDORE_PACKAGES=shiny,ggplot2 docker compose run --rm crandore-init
+  #   CRANDORE_INIT_DATES=2026-03-08,2025-09-08 docker compose run --rm crandore-init
   #
   crandore-init:
     build: .
     volumes:
       - ./:/output
     environment:
-      CRANDORE_INIT: "true"
-      CRANDORE_INIT_OUTPUT: /output/stack.yml
+      CRANDORE_INIT:                    "true"
+      CRANDORE_INIT_OUTPUT:             /output/stack.yml
       CRANDORE_PACKAGES:                ${CRANDORE_PACKAGES:-tidyverse}
       CRANDORE_INIT_DATES:              ${CRANDORE_INIT_DATES:-}
       CRANDORE_INIT_DISTROS:            ${CRANDORE_INIT_DISTROS:-jammy,noble,centos8}
@@ -32,7 +41,8 @@ services:
       CRANDORE_FULL_SNAPSHOT:           ${CRANDORE_FULL_SNAPSHOT:-false}
       CRANDORE_LOCAL_ROOT:              ${CRANDORE_LOCAL_ROOT:-/minicran}
 
-  # Mode stack : lit stack.yml et lance tous les builds définis
+  # ── Stack ────────────────────────────────────────────────────────────────────
+  # Construit tous les dépôts définis dans stack.yml.
   #
   # Usage :
   #   docker compose run --rm crandore-stack
@@ -42,14 +52,64 @@ services:
   crandore-stack:
     build: .
     volumes:
-      - /srv/cran-repos:/minicran
-      - ./stack.yml:/stack.yml:ro
+      - ${CRANDORE_REPOS_PATH:-/srv/cran-repos}:/minicran
+      - ${CRANDORE_STACK_FILE:-./stack.yml}:/stack.yml:ro
     environment:
-      CRANDORE_STACK_FILE: /stack.yml
-      CRANDORE_ONLY_DATE: ${CRANDORE_ONLY_DATE:-}
+      CRANDORE_STACK_FILE:   /stack.yml
+      CRANDORE_ONLY_DATE:    ${CRANDORE_ONLY_DATE:-}
       CRANDORE_ONLY_PROFILE: ${CRANDORE_ONLY_PROFILE:-}
 
-  # Mode test : lance la suite testthat complète
+  # ── Serve HTTP ───────────────────────────────────────────────────────────────
+  # Sert les dépôts en HTTP sur le réseau local.
+  #
+  # Usage :
+  #   docker compose up crandore-serve
+  #   → accès sur http://localhost:8080/
+  #
+  # Logs : docker compose logs -f crandore-serve
+  #
+  crandore-serve:
+    image: caddy:alpine
+    restart: unless-stopped
+    ports:
+      - "${CRANDORE_SERVE_PORT:-8080}:80"
+    volumes:
+      - ${CRANDORE_REPOS_PATH:-/srv/cran-repos}:/srv/cran-repos:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      CRANDORE_SERVE_ADDRESS: ${CRANDORE_SERVE_ADDRESS:-:80}
+
+  # ── Serve HTTPS ───────────────────────────────────────────────────────────────
+  # Sert les dépôts en HTTPS avec certificat Let's Encrypt automatique.
+  # Requiert un domaine DNS pointant vers ce serveur et les ports 80+443 libres.
+  #
+  # Configuration dans .env :
+  #   CRANDORE_SERVE_ADDRESS=cran.monserveur.fr
+  #   CRANDORE_SERVE_PORT=80     (port ACME challenge)
+  #   CRANDORE_SERVE_HTTPS_PORT=443
+  #
+  # Usage :
+  #   docker compose up crandore-serve-https
+  #   → accès sur https://cran.monserveur.fr/
+  #
+  crandore-serve-https:
+    image: caddy:alpine
+    restart: unless-stopped
+    ports:
+      - "${CRANDORE_SERVE_PORT:-80}:80"
+      - "${CRANDORE_SERVE_HTTPS_PORT:-443}:443"
+    volumes:
+      - ${CRANDORE_REPOS_PATH:-/srv/cran-repos}:/srv/cran-repos:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      CRANDORE_SERVE_ADDRESS: ${CRANDORE_SERVE_ADDRESS:-:80}
+
+  # ── Test ─────────────────────────────────────────────────────────────────────
+  # Lance la suite de tests unitaires (testthat).
   #
   # Usage :
   #   docker compose run --rm crandore-test
@@ -62,7 +122,8 @@ services:
       CRANDORE_SCRIPT_DIR: /script
     command: ["R", "-e", "testthat::test_dir('/tests/testthat', reporter = 'progress')"]
 
-  # Mode unitaire : comportement original, build manuel par env vars
+  # ── Build unitaire ───────────────────────────────────────────────────────────
+  # Comportement original : un seul dépôt configuré entièrement par env vars.
   #
   # Usage :
   #   docker compose run --rm crandore \
@@ -72,14 +133,18 @@ services:
   crandore:
     build: .
     volumes:
-      - /srv/cran-repos:/minicran
+      - ${CRANDORE_REPOS_PATH:-/srv/cran-repos}:/minicran
     environment:
-      CRANDORE_PACKAGES: ${CRANDORE_PACKAGES:-}
-      CRANDORE_OS: ${CRANDORE_OS:-}
-      CRANDORE_DISTRO: ${CRANDORE_DISTRO:-}
-      CRANDORE_ARCH: ${CRANDORE_ARCH:-}
-      CRANDORE_SNAPSHOT_DATE: ${CRANDORE_SNAPSHOT_DATE:-}
-      CRANDORE_R_VERSION: ${CRANDORE_R_VERSION:-}
-      CRANDORE_FULL_SNAPSHOT: ${CRANDORE_FULL_SNAPSHOT:-}
-      CRANDORE_CLEANUP: ${CRANDORE_CLEANUP:-}
-      CRANDORE_RESUME: ${CRANDORE_RESUME:-true}
+      CRANDORE_PACKAGES:       ${CRANDORE_PACKAGES:-}
+      CRANDORE_OS:             ${CRANDORE_OS:-}
+      CRANDORE_DISTRO:         ${CRANDORE_DISTRO:-}
+      CRANDORE_ARCH:           ${CRANDORE_ARCH:-}
+      CRANDORE_SNAPSHOT_DATE:  ${CRANDORE_SNAPSHOT_DATE:-}
+      CRANDORE_R_VERSION:      ${CRANDORE_R_VERSION:-}
+      CRANDORE_FULL_SNAPSHOT:  ${CRANDORE_FULL_SNAPSHOT:-}
+      CRANDORE_CLEANUP:        ${CRANDORE_CLEANUP:-}
+      CRANDORE_RESUME:         ${CRANDORE_RESUME:-true}
+
+volumes:
+  caddy_data:    # certificats TLS et état Caddy (persisté entre redémarrages)
+  caddy_config:  # configuration Caddy générée à l'exécution

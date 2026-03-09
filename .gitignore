@@ -1,0 +1,9 @@
+# Configuration locale — ne pas committer (contient des chemins et domaines spécifiques)
+.env
+
+# Dépôts CRAN générés localement
+minicran/
+
+# Fichiers R temporaires
+*.Rhistory
+.Rdata

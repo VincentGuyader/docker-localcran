@@ -1,0 +1,29 @@
+# Crandore — configuration Caddy
+#
+# Les variables {$VAR} sont substituées depuis le fichier .env au démarrage.
+#
+# Mode HTTP local  : CRANDORE_SERVE_ADDRESS=:80
+# Mode HTTPS public: CRANDORE_SERVE_ADDRESS=cran.monserveur.fr
+
+{$CRANDORE_SERVE_ADDRESS} {
+
+    # Dossier servi (chemin interne au conteneur, monté depuis CRANDORE_REPOS_PATH)
+    root * /srv/cran-repos
+
+    # Navigation dans les répertoires (utile pour choisir le dépôt depuis un navigateur)
+    file_server browse
+
+    # Compression gzip pour accélérer le transfert des PACKAGES
+    encode gzip
+
+    # Les fichiers PACKAGES doivent être servis en text/plain pour R
+    @packages path_regexp \/(PACKAGES|PACKAGES\.gz|PACKAGES\.rds)$
+    header @packages Content-Type text/plain
+
+    # Logs accessibles via `docker compose logs crandore-serve`
+    log {
+        output stderr
+        format console
+        level INFO
+    }
+}

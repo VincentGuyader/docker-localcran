@@ -5,17 +5,25 @@
 settings:
   local_root: /minicran
   packages:
-    # ignoré (full_snapshot: true dans les profils)
+    - tidyverse
 
 profiles:
   linux_44:
     os: linux
     r_version: "4.4"
     arch: x86_64
-    distros: [noble]
-    full_snapshot: true
+    distros: [jammy, noble, centos8]
+    packages:
+      - tidyverse
+
+  windows_44:
+    os: windows
+    r_version: "4.4"
+    packages:
+      - tidyverse
 
 snapshots:
   2026-03-09:
     profiles:
       - linux_44
+      - windows_44
