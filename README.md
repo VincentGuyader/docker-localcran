@@ -1,6 +1,6 @@
 # Crandore
 
-Crandore builds frozen, self-hosted CRAN mirrors from the [Posit Public Package Manager](https://packagemanager.posit.co/cran). Run it once to download the packages you need; point R at the result forever.
+Crandore builds frozen, self-hosted CRAN mirrors for R. Run it once to download the packages you need; point R at the result forever.
 
 ---
 
