@@ -1,0 +1,53 @@
+services:
+
+  # Mode stack : lit stack.yml et lance tous les builds définis
+  #
+  # Usage :
+  #   docker compose run --rm crandore-stack
+  #   CRANDORE_ONLY_DATE=2026-03-08 docker compose run --rm crandore-stack
+  #   CRANDORE_ONLY_PROFILE=linux_44 docker compose run --rm crandore-stack
+  #
+  crandore-stack:
+    build: .
+    volumes:
+      - /srv/cran-repos:/minicran
+      - ./stack.yml:/stack.yml:ro
+    environment:
+      CRANDORE_STACK_FILE: /stack.yml
+      CRANDORE_ONLY_DATE: ${CRANDORE_ONLY_DATE:-}
+      CRANDORE_ONLY_PROFILE: ${CRANDORE_ONLY_PROFILE:-}
+
+  # Mode test : lance la suite testthat complète
+  #
+  # Usage :
+  #   docker compose run --rm crandore-test
+  #
+  crandore-test:
+    build: .
+    volumes:
+      - ./tests:/tests
+    environment:
+      CRANDORE_SCRIPT_DIR: /script
+    command: ["R", "-e", "testthat::test_dir('/tests/testthat', reporter = 'progress')"]
+
+  # Mode unitaire : comportement original, build manuel par env vars
+  #
+  # Usage :
+  #   docker compose run --rm crandore \
+  #     -e CRANDORE_OS=linux -e CRANDORE_DISTRO=jammy \
+  #     -e CRANDORE_SNAPSHOT_DATE=2026-03-08 -e CRANDORE_PACKAGES=dplyr
+  #
+  crandore:
+    build: .
+    volumes:
+      - /srv/cran-repos:/minicran
+    environment:
+      CRANDORE_PACKAGES: ${CRANDORE_PACKAGES:-}
+      CRANDORE_OS: ${CRANDORE_OS:-}
+      CRANDORE_DISTRO: ${CRANDORE_DISTRO:-}
+      CRANDORE_ARCH: ${CRANDORE_ARCH:-}
+      CRANDORE_SNAPSHOT_DATE: ${CRANDORE_SNAPSHOT_DATE:-}
+      CRANDORE_R_VERSION: ${CRANDORE_R_VERSION:-}
+      CRANDORE_FULL_SNAPSHOT: ${CRANDORE_FULL_SNAPSHOT:-}
+      CRANDORE_CLEANUP: ${CRANDORE_CLEANUP:-}
+      CRANDORE_RESUME: ${CRANDORE_RESUME:-true}
