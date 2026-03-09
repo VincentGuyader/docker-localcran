@@ -8,9 +8,14 @@ RUN R -e "install.packages(c('miniCRAN','withr','yaml','testthat'))"
 RUN mkdir /miniCRAN
 COPY ./script /script
 CMD ["R", "-e", "\
-  stack_file <- Sys.getenv('CRANDORE_STACK_FILE', ''); \
-  if (nzchar(stack_file) && file.exists(stack_file)) { \
-    source('/script/repos_snapshot.R'); source('/script/stack_runner.R'); \
+  source('/script/repos_snapshot.R'); \
+  if (identical(Sys.getenv('CRANDORE_INIT'), 'true')) { \
+    source('/script/stack_init.R'); \
   } else { \
-    source('/script/repos_snapshot.R'); crandore(); \
+    stack_file <- Sys.getenv('CRANDORE_STACK_FILE', ''); \
+    if (nzchar(stack_file) && file.exists(stack_file)) { \
+      source('/script/stack_runner.R'); \
+    } else { \
+      crandore(); \
+    } \
   }"]

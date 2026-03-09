@@ -1,5 +1,37 @@
 services:
 
+  # Mode init : génère un stack.yml de départ
+  #
+  # Usage (génère stack.yml dans le répertoire courant) :
+  #   docker compose run --rm crandore-init
+  #
+  # Paramètres optionnels :
+  #   CRANDORE_PACKAGES=tidyverse,shiny
+  #   CRANDORE_INIT_DATES=2026-03-08,2025-09-08
+  #   CRANDORE_INIT_DISTROS=jammy,noble
+  #   CRANDORE_INIT_R_VERSIONS=4.4,4.5
+  #   CRANDORE_INIT_WINDOWS=true
+  #   CRANDORE_INIT_WINDOWS_R_VERSIONS=4.4,4.5
+  #   CRANDORE_INIT_ARM=false
+  #   CRANDORE_FULL_SNAPSHOT=false
+  #
+  crandore-init:
+    build: .
+    volumes:
+      - ./:/output
+    environment:
+      CRANDORE_INIT: "true"
+      CRANDORE_INIT_OUTPUT: /output/stack.yml
+      CRANDORE_PACKAGES:                ${CRANDORE_PACKAGES:-tidyverse}
+      CRANDORE_INIT_DATES:              ${CRANDORE_INIT_DATES:-}
+      CRANDORE_INIT_DISTROS:            ${CRANDORE_INIT_DISTROS:-jammy,noble,centos8}
+      CRANDORE_INIT_R_VERSIONS:         ${CRANDORE_INIT_R_VERSIONS:-4.4}
+      CRANDORE_INIT_WINDOWS:            ${CRANDORE_INIT_WINDOWS:-true}
+      CRANDORE_INIT_WINDOWS_R_VERSIONS: ${CRANDORE_INIT_WINDOWS_R_VERSIONS:-}
+      CRANDORE_INIT_ARM:                ${CRANDORE_INIT_ARM:-false}
+      CRANDORE_FULL_SNAPSHOT:           ${CRANDORE_FULL_SNAPSHOT:-false}
+      CRANDORE_LOCAL_ROOT:              ${CRANDORE_LOCAL_ROOT:-/minicran}
+
   # Mode stack : lit stack.yml et lance tous les builds définis
   #
   # Usage :

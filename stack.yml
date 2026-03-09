@@ -1,52 +1,21 @@
+# Généré par crandore_init() le 2026-03-09
+# Modifiez ce fichier selon vos besoins et lancez :
+#   docker compose run --rm crandore-stack
+
 settings:
   local_root: /minicran
   packages:
-    - tidyverse
+    # ignoré (full_snapshot: true dans les profils)
 
 profiles:
   linux_44:
     os: linux
-    arch: x86_64
     r_version: "4.4"
-    distros:
-      - jammy
-      - noble
-      - centos8
-
-  linux_43:
-    os: linux
     arch: x86_64
-    r_version: "4.3"
-    distros:
-      - jammy
-      - centos8
-
-  windows_45:
-    os: windows
-    r_version: "4.5"
-
-  windows_44:
-    os: windows
-    r_version: "4.4"
-
-  windows_43:
-    os: windows
-    r_version: "4.3"
+    distros: [noble]
+    full_snapshot: true
 
 snapshots:
-  2026-03-08:
+  2026-03-09:
     profiles:
       - linux_44
-      - windows_44
-      - windows_45
-
-  2025-09-08:
-    profiles:
-      - linux_44
-      - windows_44
-      - windows_45
-
-  2024-03-08:
-    profiles:
-      - linux_43
-      - windows_43
