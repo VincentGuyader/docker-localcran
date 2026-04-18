@@ -22,6 +22,8 @@
 #' @param windows        Inclure des profils Windows ? (défaut : TRUE)
 #' @param windows_r_versions Versions R pour Windows (défaut = r_versions)
 #' @param arm            Inclure des profils aarch64 ? (défaut : FALSE)
+#' @param source         Inclure un profil source universel (sans distro,
+#'                       sans version R) ? (défaut : FALSE)
 #' @param full_snapshot  Télécharger tout le CRAN ? (défaut : FALSE)
 #' @param local_root     Racine locale des repos dans le conteneur
 #' @param overwrite      Écraser le fichier s'il existe déjà ? (défaut : FALSE)
@@ -36,6 +38,7 @@ crandore_init <- function(
   windows             = TRUE,
   windows_r_versions  = NULL,
   arm                 = FALSE,
+  source              = FALSE,
   full_snapshot       = FALSE,
   local_root          = "/minicran",
   overwrite           = FALSE
@@ -143,6 +146,17 @@ crandore_init <- function(
     }
   }
 
+  # Profil source (universel, indépendant plateforme / version R)
+  if (isTRUE(source)) {
+    prof_name <- "source"
+    snap_profiles <- c(snap_profiles, prof_name)
+    profile_body <- list(os = "source")
+    if (isTRUE(full_snapshot)) profile_body$full_snapshot <- TRUE
+    if (!isTRUE(full_snapshot) && length(packages) > 0)
+      profile_body$packages <- as.list(packages)
+    profiles[[prof_name]] <- profile_body
+  }
+
   # Profils Windows
   if (isTRUE(windows)) {
     for (rv in windows_r_versions) {
@@ -191,7 +205,9 @@ crandore_init <- function(
     p     <- profiles[[pname]]
     lines <- c(lines, sprintf("  %s:", pname))
     lines <- c(lines, sprintf("    os: %s", p$os))
-    lines <- c(lines, sprintf("    r_version: \"%s\"", p$r_version))
+    if (!is.null(p$r_version)) {
+      lines <- c(lines, sprintf("    r_version: \"%s\"", p$r_version))
+    }
 
     if (!is.null(p$arch)) {
       lines <- c(lines, sprintf("    arch: %s", p$arch))
@@ -243,10 +259,13 @@ crandore_init <- function(
     mode <- if (isTRUE(p$full_snapshot)) "FULL CRAN" else paste(unlist(p$packages), collapse = ", ")
     target <- if (p$os == "linux") {
       sprintf("linux/%s [%s]", p$arch, paste(unlist(p$distros), collapse = ", "))
-    } else {
+    } else if (p$os == "windows") {
       "windows/x86_64"
+    } else {
+      "source"
     }
-    message(sprintf("    %-25s R %s | %s | %s", pname, p$r_version, target, mode))
+    rv_label <- if (is.null(p$r_version)) "-" else p$r_version
+    message(sprintf("    %-25s R %s | %s | %s", pname, rv_label, target, mode))
   }
   message("  Dates :", paste(dates, collapse = ", "))
   message("\nLancez : docker compose run --rm crandore-stack")
@@ -283,6 +302,7 @@ if (identical(Sys.getenv("CRANDORE_INIT"), "true")) {
       if (nzchar(v)) strsplit(v, ",")[[1]] else NULL
     },
     arm                = as_logical(getenv_or("CRANDORE_INIT_ARM", "false")),
+    source             = as_logical(getenv_or("CRANDORE_INIT_SOURCE", "false")),
     full_snapshot      = as_logical(getenv_or("CRANDORE_FULL_SNAPSHOT", "false")),
     local_root         = getenv_or("CRANDORE_LOCAL_ROOT", "/minicran"),
     overwrite          = TRUE

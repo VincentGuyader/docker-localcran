@@ -35,6 +35,9 @@ make_stack <- function() {
         r_version = "4.4",
         distros   = list("noble"),
         packages  = list("shiny", "data.table")
+      ),
+      source_universal = list(
+        os = "source"
       )
     ),
     snapshots = list(
@@ -99,6 +102,19 @@ test_that("un build windows a les bons champs", {
   expect_equal(b$os,    "windows")
   expect_equal(b$distro, "")
   expect_equal(b$arch,  "x86_64")
+})
+
+test_that("un profil source ne nécessite ni distro ni arch ni r_version", {
+  s <- make_stack()
+  s$snapshots[["2026-03-08"]] <- list(profiles = list("source_universal"))
+  builds <- resolve_builds(s, "2026-03-08", "", "tidyverse")
+  expect_equal(length(builds), 1)
+  b <- builds[[1]]
+  expect_equal(b$os,        "source")
+  expect_equal(b$distro,    "")
+  expect_equal(b$arch,      "")
+  expect_equal(b$r_version, "")
+  expect_equal(b$packages,  "tidyverse")
 })
 
 test_that("linux_44 avec 2 distros génère 2 builds distincts", {

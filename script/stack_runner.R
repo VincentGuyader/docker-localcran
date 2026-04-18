@@ -50,11 +50,17 @@ if (length(builds) == 0) {
 # --- Résumé avant exécution --------------------------------------------
 
 message(sprintf("\n=== Crandore Stack : %d build(s) à exécuter ===\n", length(builds)))
+describe_target <- function(b) {
+  if (b$os == "linux") sprintf("%s/%s", b$distro, b$arch)
+  else if (b$os == "windows") "windows/x86_64"
+  else "source"
+}
+describe_r <- function(b) if (b$os == "source") "-" else b$r_version
+
 for (b in builds) {
-  target     <- if (b$os == "linux") sprintf("%s/%s", b$distro, b$arch) else "windows/x86_64"
   mode_label <- if (b$full_snapshot) "FULL CRAN" else b$packages
   message(sprintf("  [%s] %s | %s | R %s | %s",
-                  b$profile, b$date, target, b$r_version, mode_label))
+                  b$profile, b$date, describe_target(b), describe_r(b), mode_label))
 }
 message("")
 
@@ -63,12 +69,13 @@ message("")
 failed <- character()
 
 for (i in seq_along(builds)) {
-  b      <- builds[[i]]
-  target <- if (b$os == "linux") sprintf("%s/%s", b$distro, b$arch) else "windows/x86_64"
+  b       <- builds[[i]]
+  target  <- describe_target(b)
+  r_label <- describe_r(b)
 
   mode_label <- if (b$full_snapshot) "FULL" else sprintf("packages: %s", b$packages)
   message(sprintf("\n[%d/%d] %s | %s | R %s | %s",
-                  i, length(builds), b$date, target, b$r_version, mode_label))
+                  i, length(builds), b$date, target, r_label, mode_label))
 
   tryCatch({
     crandore(
@@ -84,8 +91,8 @@ for (i in seq_along(builds)) {
     )
   }, error = function(e) {
     message(sprintf("ERREUR sur le build [%s | %s | R %s] : %s",
-                    b$date, target, b$r_version, conditionMessage(e)))
-    failed <<- c(failed, sprintf("%s|%s|R%s", b$date, target, b$r_version))
+                    b$date, target, r_label, conditionMessage(e)))
+    failed <<- c(failed, sprintf("%s|%s|R%s", b$date, target, r_label))
   })
 }
 

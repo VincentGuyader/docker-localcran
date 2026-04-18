@@ -63,6 +63,19 @@ resolve_builds <- function(stack, only_date, only_profile, default_packages) {
           full_snapshot = build_full_snapshot,
           packages      = build_packages
         )))
+      } else if (p$os == "source") {
+        # Source repos are platform- and R-version-independent : no distro
+        # iteration, no arch, no r_version key required.
+        builds <- c(builds, list(list(
+          date          = date,
+          profile       = profile_name,
+          os            = "source",
+          distro        = "",
+          arch          = "",
+          r_version     = "",
+          full_snapshot = build_full_snapshot,
+          packages      = build_packages
+        )))
       } else {
         stop(sprintf("os '%s' inconnu dans le profil '%s'", p$os, profile_name))
       }

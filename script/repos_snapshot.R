@@ -7,9 +7,12 @@
 # - Windows PPM (zip binaries => type="win.binary")
 #   URL: https://packagemanager.posit.co/cran/<YYYY-MM-DD|latest>
 #   contrib: /bin/windows/contrib/<Rmajor.minor>
+# - Source CRAN (portable, R-version & platform independent)
+#   URL: https://packagemanager.posit.co/cran/<YYYY-MM-DD|latest>
+#   contrib: /src/contrib  (written at <local_root>/src/contrib)
 #
 # Env vars (all optional):
-# - CRANDORE_OS            : "linux" (default = current OS) or "windows"
+# - CRANDORE_OS            : "linux" (default = current OS), "windows", or "source"
 # - CRANDORE_DISTRO        : e.g. "noble", "jammy", "bookworm"... (linux only, default = auto-detection from container)
 # - CRANDORE_ARCH          : "x86_64" (default = current arch) or "aarch64" (linux only)
 # - CRANDORE_SNAPSHOT_DATE : "YYYY-MM-DD" or "latest" (default: Sys.Date())
@@ -25,8 +28,10 @@
 # - CRANDORE_RESUME        : TRUE/FALSE (default TRUE) skips already present packages
 #
 # Result:
-# - local repository created in <CRANDORE_LOCAL_ROOT>/<CRANDORE_OS>/<target>/<Rmajor.minor>
-#   target = distro-arch (linux) or "windows-x86_64"
+# - local repository created in:
+#     linux   : <CRANDORE_LOCAL_ROOT>/linux/<distro>-<arch>/R-<major.minor>/src/contrib
+#     windows : <CRANDORE_LOCAL_ROOT>/windows/windows-<arch>/R-<major.minor>/bin/windows/contrib/<major.minor>
+#     source  : <CRANDORE_LOCAL_ROOT>/src/contrib     (no os/distro/R subpath)
 # - PACKAGES / PACKAGES.gz / PACKAGES.rds updated
 # ============================================================
 
@@ -81,15 +86,21 @@ r_major_minor <- function(r_version) {
   paste(parts[1], parts[2], sep = ".")
 }
 
-pick_triplet <- function(os = c("linux","windows"), arch = c("x86_64","aarch64")) {
+pick_triplet <- function(os = c("linux","windows","source"), arch = c("x86_64","aarch64")) {
   os <- match.arg(os)
+  if (os == "source") {
+    # Source mode: platform-agnostic. Advertise a generic source triplet so
+    # the HTTP User-Agent still identifies the caller but doesn't lock PPM
+    # into selecting a particular binary target.
+    return(list(platform = "source", arch = "source", os = "source"))
+  }
   arch <- match.arg(arch)
-  
+
   if (os == "linux") {
     if (arch == "x86_64") return(list(platform = "x86_64-pc-linux-gnu", arch = "x86_64", os = "linux-gnu"))
     return(list(platform = "aarch64-pc-linux-gnu", arch = "aarch64", os = "linux-gnu"))
   }
-  
+
   # windows
   list(platform = "x86_64-w64-mingw32", arch = "x86_64", os = "mingw32")
 }
@@ -105,6 +116,8 @@ build_repo_url <- function(os, distro, snapshot_date, base_url) {
   if (os == "linux") {
     sprintf("%s/__linux__/%s/%s", base_url, distro, snapshot_date)
   } else {
+    # windows and source both use base_url/<date> ; source reads /src/contrib,
+    # windows reads /bin/windows/contrib/<Rmm> via contriburl_windows()
     sprintf("%s/%s", base_url, snapshot_date)
   }
 }
@@ -116,6 +129,8 @@ contriburl_windows <- function(repo_url, r_version_target) {
 
 repo_type <- function(os) {
   if (os == "windows") "win.binary" else "source"
+  # "linux" and "source" both resolve to "source" — linux PPM serves binaries
+  # repackaged as source-shaped archives under /src/contrib.
 }
 
 local_root_default <- function() {
@@ -195,6 +210,12 @@ list_downloaded_names <- function(local_repo, os) {
 }
 
 write_packages_index <- function(local_repo, os, r_version_target, verbose = TRUE) {
+  if (os == "source") {
+    dir_src <- file.path(local_repo, "src", "contrib")
+    if (!dir.exists(dir_src)) dir.create(dir_src, recursive = TRUE, showWarnings = FALSE)
+    tools::write_PACKAGES(dir = dir_src, type = "source", verbose = verbose)
+    return(invisible(dir_src))
+  }
   if (os == "windows") {
     mm <- r_major_minor(r_version_target)
     dir_bin <- file.path(local_repo, "bin", "windows", "contrib", mm)
@@ -224,6 +245,20 @@ write_packages_index <- function(local_repo, os, r_version_target, verbose = TRU
 
 # Robust single download + resume + verbose
 download_one <- function(pkg, os, repos, local_repo, r_version_target, verbose = TRUE) {
+  if (os == "source") {
+    # PPM /<date>/src/contrib serves real source tarballs, independent of
+    # R version and platform. miniCRAN::makeRepo writes to
+    # <local_repo>/src/contrib/<pkg>_<ver>.tar.gz.
+    miniCRAN::makeRepo(
+      pkg = pkg,
+      repos = repos,
+      path = local_repo,
+      type = "source",
+      writePACKAGES = FALSE,
+      quiet = !isTRUE(verbose)
+    )
+    return(invisible(TRUE))
+  }
   if (os == "windows") {
     mm <- r_major_minor(r_version_target)
     destdir <- file.path(local_repo, "bin", "windows", "contrib", mm)
@@ -258,6 +293,9 @@ available_packages <- function(os, repos, r_version_target) {
     cu <- contriburl_windows(repos[[1]], r_version_target)
     available.packages(repos = repos, type = "win.binary", contriburl = cu)
   } else {
+    # "linux" and "source" both use PPM's /src/contrib (linux PPM repackages
+    # binaries with source-shaped URLs). available.packages auto-derives
+    # <repo>/src/contrib so no contriburl override is needed.
     available.packages(repos = repos, type = "source")
   }
 }
@@ -387,23 +425,28 @@ crandore_ <- function() {
   current_arch <- tolower(R.Version()$arch)
 
   os <- tolower(getenv("CRANDORE_OS", current_os))
-  if (!os %in% c("linux","windows")) stop("CRANDORE_OS must be 'linux' or 'windows'")
+  if (!os %in% c("linux","windows","source")) stop("CRANDORE_OS must be 'linux', 'windows' or 'source'")
 
-  distro <- tolower(getenv("CRANDORE_DISTRO", detect_container_distro()))
-  arch <- tolower(getenv("CRANDORE_ARCH", current_arch))
-  if (!arch %in% c("x86_64","aarch64")) {
-    stop("CRANDORE_ARCH must be 'x86_64' (windows or linux) or 'aarch64' (linux only)")
-  }
   if (os == "linux") {
     distro <- tolower(getenv("CRANDORE_DISTRO", detect_container_distro()))
     if (!distro %in% linux_distros) {
       stop(sprintf("CRANDORE_DISTRO unknown: '%s'. Values: %s", distro, paste(linux_distros, collapse = ", ")))
     }
-  } else {
+    arch <- tolower(getenv("CRANDORE_ARCH", current_arch))
+    if (!arch %in% c("x86_64","aarch64")) {
+      stop("CRANDORE_ARCH must be 'x86_64' or 'aarch64' (linux only)")
+    }
+  } else if (os == "windows") {
     distro <- NULL
+    arch <- tolower(getenv("CRANDORE_ARCH", current_arch))
+    if (!arch %in% c("x86_64")) {
+      stop("CRANDORE_ARCH for windows must be 'x86_64'")
+    }
+  } else {
+    # source: platform-independent, R-version-independent
+    distro <- NULL
+    arch <- NA_character_
   }
-  arch <- tolower(getenv("CRANDORE_ARCH", current_arch))
-  if (!arch %in% c("x86_64","aarch64")) stop("CRANDORE_ARCH must be 'x86_64' or 'aarch64' (linux only)")
   snapshot_date <- validate_snapshot_date(getenv("CRANDORE_SNAPSHOT_DATE", ""))
   base_url <- getenv("CRANDORE_BASE_URL", "https://packagemanager.posit.co/cran")
 
@@ -435,15 +478,22 @@ crandore_ <- function() {
   repo_url <- build_repo_url(os = os, distro = distro, snapshot_date = snapshot_date, base_url = base_url)
   repos <- c(CRAN = repo_url)
 
-  triplet <- pick_triplet(os = os, arch = arch)
+  triplet <- pick_triplet(os = os, arch = if (os == "source") "x86_64" else arch)
   ua <- build_http_user_agent(triplet, r_version_target = r_version_target)
 
   options(repos = repos, HTTPUserAgent = ua)
 
-  # 3) Local path distinct per OS/target/Rmajor.minor
+  # 3) Local path
+  #    linux   : <local_root>/linux/<distro>-<arch>/R-<mm>
+  #    windows : <local_root>/windows/windows-<arch>/R-<mm>
+  #    source  : <local_root>              (R-version & platform independent)
   r_mm <- r_major_minor(r_version_target)
-  target_id <- if (os == "linux") paste0(distro, "-", arch) else paste0("windows-", arch)
-  local_repo <- file.path(local_root, os, target_id, paste0("R-", r_mm))
+  if (os == "source") {
+    local_repo <- local_root
+  } else {
+    target_id <- if (os == "linux") paste0(distro, "-", arch) else paste0("windows-", arch)
+    local_repo <- file.path(local_root, os, target_id, paste0("R-", r_mm))
+  }
   dir.create(local_repo, recursive = TRUE, showWarnings = FALSE)
 
   display_info(paste0("OS = ", os), verbose = verbose)
@@ -451,7 +501,9 @@ crandore_ <- function() {
     display_info(paste0("Distro = ", distro), verbose = verbose)
     display_info(paste0("Arch = ", arch), verbose = verbose)
   }
-  display_info(paste0("Target R version = ", as.character(r_version_target), " (", r_mm, ")"), verbose = verbose)
+  if (os != "source") {
+    display_info(paste0("Target R version = ", as.character(r_version_target), " (", r_mm, ")"), verbose = verbose)
+  }
   display_info(paste0("Snapshot = ", snapshot_date), verbose = verbose)
   display_info(paste0("PPM repo = ", repo_url), verbose = verbose)
   if (os == "windows") {
@@ -568,8 +620,8 @@ crandore_ <- function() {
     distro = if (os == "linux") distro else NA_character_,
     arch = if (os == "linux") arch else NA_character_,
     snapshot_date = snapshot_date,
-    r_version_target = as.character(r_version_target),
-    r_major_minor = r_mm,
+    r_version_target = if (os == "source") NA_character_ else as.character(r_version_target),
+    r_major_minor = if (os == "source") NA_character_ else r_mm,
     repo_url = repo_url,
     repo_type = repo_type(os),
     local_repo = normalizePath(local_repo, winslash = "/", mustWork = FALSE),
@@ -585,8 +637,10 @@ crandore_ <- function() {
 #' to create a local CRAN repository snapshot. Supports both full snapshots (all available packages)
 #' and partial snapshots (specified packages + dependencies).
 #'
-#' @param os Character string. Target operating system: "linux" or "windows".
-#'   Defaults to current OS or CRANDORE_OS environment variable.
+#' @param os Character string. Target: "linux", "windows", or "source".
+#'   "source" builds an R-version and platform independent repo of source
+#'   tarballs at `<local_root>/src/contrib` — the universal fallback CRAN
+#'   layout. Defaults to current OS or CRANDORE_OS environment variable.
 #' @param distro Character string. Linux distribution for binary packages.
 #'   Supported: "jammy", "noble", "bookworm", etc. Auto-detected if not specified.
 #' @param arch Character string. Architecture: "x86_64" or "aarch64" (Linux only).

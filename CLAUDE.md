@@ -27,10 +27,21 @@ CRANDORE_ONLY_DATE=2026-03-08 docker compose run --rm crandore-stack
 CRANDORE_ONLY_PROFILE=linux_44 docker compose run --rm crandore-stack
 ```
 
-**Run tests:**
+**Run all tests:**
 ```bash
 docker compose run --rm crandore-test
 ```
+
+**Run a single test file (locally, without Docker):**
+```bash
+Rscript -e "testthat::test_file('tests/testthat/test-stack-utils.R')"
+```
+
+**Run tests locally without Docker** (requires `miniCRAN`, `withr`, `yaml`, `testthat` installed):
+```bash
+Rscript -e "testthat::test_dir('tests/testthat', reporter = 'progress')"
+```
+The test helper (`tests/testthat/helper.R`) auto-locates `script/` relative to the working directory, so run from the repo root.
 
 **Single build without docker compose:**
 ```bash
@@ -74,6 +85,10 @@ Crandore creates repos at `<local_root>/<os>/<distro>-<arch>/R-<major.minor>/`:
 - `index_needs_update()`: cache check by package count and file timestamps
 - `cleanup_obsolete_packages()`: removes packages no longer in the target list
 
+### Key function in `stack_init.R`
+
+- `crandore_init()`: generates `stack.yml` from high-level parameters (packages, dates, distros, R versions, Windows/ARM flags). Called directly at Docker entrypoint when `CRANDORE_INIT=true`.
+
 ### Two download modes
 
 - **Partial** (default): resolves transitive dependencies via `miniCRAN::pkgDep()`, downloads only what's needed
@@ -91,6 +106,46 @@ Crandore creates repos at `<local_root>/<os>/<distro>-<arch>/R-<major.minor>/`:
 | `.env` | Local config (gitignored): `CRANDORE_REPOS_PATH`, ports, domain |
 | `stack.yml` | Declares what to build: profiles (platform + R version) × snapshot dates |
 | `Caddyfile` | Caddy config for the serve services; uses `{$VAR}` substitution from `.env` |
+| `packages.list` | Example packages file usable via `CRANDORE_PACKAGES_FILE` (one package per line, `#` comments allowed) |
+
+### `stack.yml` structure
+
+```yaml
+settings:
+  local_root: /minicran      # mount point inside the container
+  packages: [tidyverse]      # default package list (can be overridden per profile)
+  base_url: ...              # optional: overrides default PPM URL
+
+profiles:
+  linux_44:
+    os: linux
+    r_version: "4.4"
+    arch: x86_64
+    distros: [jammy, noble]
+    # packages: [shiny]      # profile-level packages override settings.packages
+    # full_snapshot: true    # download all CRAN packages
+
+snapshots:
+  2026-03-08:
+    profiles: [linux_44, windows_44]
+```
+
+`resolve_builds()` in `stack_utils.R` expands this into one build entry per (date × profile × distro).
+
+### `crandore-init` env vars
+
+These control what `stack.yml` is generated with when running `docker compose run --rm crandore-init`:
+
+| Var | Default | Description |
+|-----|---------|-------------|
+| `CRANDORE_PACKAGES` | `tidyverse` | Packages to mirror |
+| `CRANDORE_INIT_DATES` | today | Comma-separated snapshot dates |
+| `CRANDORE_INIT_DISTROS` | `jammy,noble,centos8` | Linux distros |
+| `CRANDORE_INIT_R_VERSIONS` | `4.4` | R versions for Linux |
+| `CRANDORE_INIT_WINDOWS` | `true` | Include Windows profiles |
+| `CRANDORE_INIT_WINDOWS_R_VERSIONS` | (same as Linux) | R versions for Windows |
+| `CRANDORE_INIT_ARM` | `false` | Include aarch64 profiles |
+| `CRANDORE_FULL_SNAPSHOT` | `false` | Mirror all CRAN packages |
 
 ### R dependencies installed in the image
 

@@ -63,6 +63,24 @@ test_that("build_repo_url fonctionne avec latest", {
   expect_equal(url, "https://packagemanager.posit.co/cran/__linux__/noble/latest")
 })
 
+test_that("build_repo_url construit les URLs source (platform-independent)", {
+  url <- build_repo_url("source", NULL, "2024-01-01",
+                        "https://packagemanager.posit.co/cran")
+  expect_equal(url, "https://packagemanager.posit.co/cran/2024-01-01")
+})
+
+test_that("pick_triplet gère l'OS source sans arch", {
+  t <- pick_triplet("source")
+  expect_equal(t$platform, "source")
+  expect_equal(t$os, "source")
+})
+
+test_that("repo_type retourne source pour linux et source", {
+  expect_equal(repo_type("linux"), "source")
+  expect_equal(repo_type("source"), "source")
+  expect_equal(repo_type("windows"), "win.binary")
+})
+
 test_that("read_packages_env parse un CSV correctement", {
   expect_equal(read_packages_env("dplyr,ggplot2"),        c("dplyr", "ggplot2"))
   expect_equal(read_packages_env("dplyr , ggplot2"),      c("dplyr", "ggplot2"))  # espaces
