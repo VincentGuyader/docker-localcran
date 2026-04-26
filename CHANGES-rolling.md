@@ -29,7 +29,34 @@
 | `DISTROS` | `jammy,noble` | distros Linux à construire |
 | `HUB_NAME` | `crandore-hub` | container à réindexer |
 | `PPM_BASE_URL` | `https://packagemanager.posit.co/cran` | source des paquets |
+| `DEDUP` | `true` | dédup par hardlinks en fin de run (`jdupes -rL`) |
 | `LOCK_FILE` | `/tmp/crandore-rolling.lock` | empêche les runs concurrents |
+
+## Dédup par hardlinks (DEDUP=true par défaut)
+
+Étape 7 du script : après le re-index, `jdupes -rL $REPOS_ROOT` fusionne les
+fichiers identiques en contenu (taille + hash) en hardlinks. Gain attendu
+**~70 %** quand plusieurs snapshots full sont pinnés en plus du rolling.
+
+- Comparaison **par contenu**, jamais par nom : un même nom de tarball peut
+  correspondre à 3 contenus différents (source / binaire jammy / binaire
+  noble) — `jdupes` les laisse séparés.
+- Sous le **même flock** que le run rolling — aucun race possible avec un
+  download.
+- Désactivable à chaud : `DEDUP=false /home/ubuntu/Crandore/rolling-update.sh`.
+
+### ⚠ Piège backup à connaître
+
+Avec la dédup activée, un `tar -cf` ou `rsync` *naïf* re-duplique les octets
+dans l'archive et perd le bénéfice au restore.
+
+| Outil | Commande correcte |
+|---|---|
+| `rsync` | `rsync -aH source/ dest/`  (le `-H` est crucial) |
+| `tar` | `tar --hard-dereference=no -czf …` (défaut GNU tar — ne pas y toucher) |
+| `cp` | `cp -al` pour un snapshot logique sans duplication |
+
+Sans ces flags, le backup pèsera ~5× la taille réelle.
 
 ## Cron existant
 
