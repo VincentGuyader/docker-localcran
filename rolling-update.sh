@@ -28,6 +28,8 @@
 #   DISTROS       default "jammy,noble"
 #   HUB_NAME      default crandore-hub
 #   PPM_BASE_URL  default https://packagemanager.posit.co/cran
+#   DEDUP         default true — hardlink-deduplicate cran-repos at the end
+#                 (jdupes -rL, content-based, never by name)
 set -euo pipefail
 
 REPOS_ROOT=${REPOS_ROOT:-/home/ubuntu/cran-repos}
@@ -37,6 +39,7 @@ R_VERSION=${R_VERSION:-4.5.0}
 DISTROS=${DISTROS:-jammy,noble}
 HUB_NAME=${HUB_NAME:-crandore-hub}
 PPM_BASE_URL=${PPM_BASE_URL:-https://packagemanager.posit.co/cran}
+DEDUP=${DEDUP:-true}
 LOCK_FILE=${LOCK_FILE:-/tmp/crandore-rolling.lock}
 TODAY=$(date -u +%F)
 
@@ -172,6 +175,23 @@ if docker ps --format '{{.Names}}' | grep -qx "$HUB_NAME"; then
   fi
 else
   log "$HUB_NAME container not running — skipping re-index"
+fi
+
+# --- 7. Hardlink-deduplicate the mirror (saves disk across snapshots) -----
+# Two `.tar.gz` with the same name but different content (e.g. source vs
+# linux-binary tarballs) MUST NOT be merged. jdupes compares by content
+# (size + hash), never by name. Safe to run here: we hold the rolling lock
+# so no concurrent download is writing into cran-repos.
+if [[ "$DEDUP" == "true" ]] && command -v jdupes >/dev/null; then
+  before=$(du -sb "$REPOS_ROOT" | cut -f1)
+  log "dedup: scanning $REPOS_ROOT (before: $(numfmt --to=iec --suffix=B $before))"
+  # -r recursive, -L hardlink duplicates, -q quiet, -X size+ skips empty files
+  jdupes -rLq -X 'size+:1' "$REPOS_ROOT" 2>&1 | tail -5 | sed 's/^/  /'
+  after=$(du -sb "$REPOS_ROOT" | cut -f1)
+  saved=$((before - after))
+  log "dedup: after $(numfmt --to=iec --suffix=B $after), saved $(numfmt --to=iec --suffix=B $saved)"
+elif [[ "$DEDUP" == "true" ]]; then
+  log "dedup: jdupes not installed, skipping (apt-get install jdupes)"
 fi
 
 log "done"
